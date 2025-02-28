@@ -1,7 +1,5 @@
-# Gun-game-
 import pygame
 import math
-import random
 from pygame.locals import *
 
 # Initialize Pygame
@@ -32,16 +30,17 @@ class GameObject:
 class Gun(GameObject):
     def __init__(self):
         super().__init__()
-        self.position = [0, -50, CAMERA_DISTANCE]
+        self.position = [0, 0, CAMERA_DISTANCE - 100]  # Move gun back
         self.lateral_speed = 5
+        self.vertical_speed = 5
         self.rotation_speed = 0.5
 
 class Target(GameObject):
     def __init__(self):
         super().__init__()
         self.position = [0, 0, CAMERA_DISTANCE + 1000]
-        self.rings = [140, 110, 80, 50]
-        self.colors = [BLACK, WHITE, BLACK, WHITE]
+        self.rings = [200, 170, 140, 110, 80, 50]
+        self.colors = [BLACK, WHITE, BLACK, WHITE, BLACK, WHITE]
 
 class Bullet:
     def __init__(self, position, rotation):
@@ -59,14 +58,14 @@ def project_3d_to_2d(point):
     f = 2  # Projection factor
     x = point[0] * f * CAMERA_DISTANCE / (CAMERA_DISTANCE + point[2])
     y = point[1] * f * CAMERA_DISTANCE / (CAMERA_DISTANCE + point[2])
-    return (int(WIDTH/2 + x), int(HEIGHT/2 - y)
+    return(int(WIDTH/2 + x), int(HEIGHT/2 - y))
 
 def draw_target(target):
     center = project_3d_to_2d(target.position)
     for i, radius in enumerate(target.rings):
         screen_radius = int(radius * CAMERA_DISTANCE / (CAMERA_DISTANCE + target.position[2]))
         pygame.draw.circle(screen, target.colors[i], center, screen_radius)
-        if i < 3:
+        if i < len(target.rings) - 1:
             pygame.draw.circle(screen, BLACK, center, screen_radius, 3)
 
 def draw_gun(gun):
@@ -116,7 +115,7 @@ def check_target_hit(bullet, target):
     
     for i, radius in enumerate(target.rings):
         if distance <= radius:
-            return 50 - i*10  # 50, 40, 30, 20 points
+            return 50 - i*10  # 50, 40, 30, 20, 10, 0 points
     return 0
 
 # Initialize game objects
@@ -145,12 +144,19 @@ while running:
     gun.rotation[0] += mouse_dy * mouse_sensitivity
     gun.rotation[1] += mouse_dx * mouse_sensitivity
     
-    # Keyboard movement
+    # Clamp vertical rotation to avoid stretching
+    gun.rotation[0] = max(min(gun.rotation[0], 89), -89)  # -89 to 89 degrees
+    
+    # Keyboard movement for gun
     keys = pygame.key.get_pressed()
     if keys[K_LEFT]:
         gun.position[0] -= gun.lateral_speed
     if keys[K_RIGHT]:
         gun.position[0] += gun.lateral_speed
+    if keys[K_UP]:
+        gun.position[1] -= gun.vertical_speed
+    if keys[K_DOWN]:
+        gun.position[1] += gun.vertical_speed
     
     # Update bullets
     for bullet in bullets[:]:
